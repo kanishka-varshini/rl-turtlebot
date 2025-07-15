@@ -1,1 +1,0 @@
-/home/obi/turtlebot4_ws/src/turtlebot4_ignition_bringup_local/launch/turtlebot4_ignition.launch.py

@@ -1,1 +1,0 @@
-/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/ament_cmake_environment_hooks/local_setup.sh
