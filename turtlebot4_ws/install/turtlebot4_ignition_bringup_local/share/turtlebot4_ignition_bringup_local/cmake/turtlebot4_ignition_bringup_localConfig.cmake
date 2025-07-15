@@ -1,0 +1,1 @@
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/ament_cmake_core/turtlebot4_ignition_bringup_localConfig.cmake

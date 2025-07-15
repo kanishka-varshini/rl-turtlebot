@@ -1,0 +1,130 @@
+import rclpy
+from rclpy.node import Node
+from nav_msgs.msg import Odometry
+import pygame
+import math
+
+# --- Constants ---
+WINDOW_SIZE = 500
+ROBOT_RADIUS = 10
+UPDATE_HZ = 30
+
+class Simple2DVisualizer(Node):
+    def __init__(self):
+        super().__init__('ttb4_visualizer')
+
+        self.odom_sub = self.create_subscription(
+            Odometry,
+            '/robot_state',
+            self.odom_callback,
+            10)
+
+        self.x, self.y, self.theta = WINDOW_SIZE // 2, WINDOW_SIZE // 2, 0.0
+
+        pygame.init()
+        self.screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+        pygame.display.set_caption("2D TurtleBot Visualization")
+        self.font = pygame.font.SysFont('Arial', 16)
+
+        self.timer = self.create_timer(1.0 / UPDATE_HZ, self.update)
+
+    def odom_callback(self, msg):
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        qz = msg.pose.pose.orientation.z
+        qw = msg.pose.pose.orientation.w
+        self.theta = 2 * math.atan2(qz, qw)
+
+    def update(self):
+        self.screen.fill((255, 255, 255))
+        pygame.draw.circle(self.screen, (0, 0, 255), (int(self.x), int(self.y)), ROBOT_RADIUS)
+
+        # Heading line
+        end_x = int(self.x + ROBOT_RADIUS * 2 * math.cos(self.theta))
+        end_y = int(self.y + ROBOT_RADIUS * 2 * math.sin(self.theta))
+        pygame.draw.line(self.screen, (255, 0, 0), (int(self.x), int(self.y)), (end_x, end_y), 2)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                rclpy.shutdown()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    viz = Simple2DVisualizer()
+    rclpy.spin(viz)
+    viz.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+// ttb4_sim_node.cpp
+
+#include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include <chrono>
+#include <cmath>
+
+using namespace std::chrono_literals;
+
+class Simple2DSimulator : public rclcpp::Node {
+public:
+    Simple2DSimulator() : Node("ttb4_sim_cpp") {
+        cmd_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            std::bind(&Simple2DSimulator::cmd_callback, this, std::placeholders::_1)
+        );
+
+        odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/robot_state", 10);
+
+        timer_ = this->create_wall_timer(
+            33ms, std::bind(&Simple2DSimulator::update, this));
+
+        x_ = 250.0;
+        y_ = 250.0;
+        theta_ = 0.0;
+    }
+
+private:
+    void cmd_callback(const geometry_msgs::msg::Twist::SharedPtr msg) {
+        cmd_ = *msg;
+    }
+
+    void update() {
+        double dt = 0.033; // 33 ms
+        double speed = 50.0;
+        double rot_speed = 2.0;
+
+        double v = cmd_.linear.x * speed * dt;
+        double w = cmd_.angular.z * rot_speed * dt;
+
+        theta_ += w;
+        x_ += v * std::cos(theta_);
+        y_ += v * std::sin(theta_);
+
+        x_ = std::max(10.0, std::min(490.0, x_));
+        y_ = std::max(10.0, std::min(490.0, y_));
+
+        auto odom = nav_msgs::msg::Odometry();
+        odom.pose.pose.position.x = x_;
+        odom.pose.pose.position.y = y_;
+        odom.pose.pose.orientation.z = std::sin(theta_ / 2.0);
+        odom.pose.pose.orientation.w = std::cos(theta_ / 2.0);
+        odom_pub_->publish(odom);
+    }
+
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    geometry_msgs::msg::Twist cmd_;
+    double x_, y_, theta_;
+};

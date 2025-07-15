@@ -1,0 +1,9 @@
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/uninstall.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/turtlebot4_ignition_bringup_local_uninstall.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/test.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/edit_cache.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/rebuild_cache.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/list_install_components.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/install.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/install/local.dir
+/home/obi/turtlebot4_ws/build/turtlebot4_ignition_bringup_local/CMakeFiles/install/strip.dir
