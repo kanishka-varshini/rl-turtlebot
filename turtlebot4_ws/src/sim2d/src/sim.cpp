@@ -8,21 +8,32 @@
 using namespace std::chrono_literals;
 
 class Simple2DSimulator : public rclcpp::Node {
+    
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    geometry_msgs::msg::Twist cmd_;
+    double x_, y_, theta_, v_;
+
 public:
     Simple2DSimulator() : Node("ttb4_sim_cpp") {
         cmd_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
-            std::bind(&Simple2DSimulator::cmd_callback, this, std::placeholders::_1)
+            [this](const geometry_msgs::msg::Twist::SharedPtr msg){this->cmd_callback(msg);}
         );
 
         odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/robot_state", 10);
 
         timer_ = this->create_wall_timer(
-            33ms, std::bind(&Simple2DSimulator::update, this));
+            33ms, 
+            [this](){this->update();}
+        );
 
         x_ = 250.0;
         y_ = 250.0;
         theta_ = 0.0;
+        v_ = 0.0;
     }
 
 private:
@@ -32,31 +43,31 @@ private:
 
     void update() {
         double dt = 0.033; // 33 ms
-        double speed = 50.0;
-        double rot_speed = 2.0;
+        double a;
+        float tarv = cmd_.linear.x;
 
-        double v = cmd_.linear.x * speed * dt;
-        double w = cmd_.angular.z * rot_speed * dt;
+        if(v_<tarv){
+            a = 0.9;
+        }
+        else if(v_>tarv){
+            a = -0.9;
+        }
+        else{
+            a = 0.0;
+        }
 
-        theta_ += w;
-        x_ += v * std::cos(theta_);
-        y_ += v * std::sin(theta_);
+        v_ += a * dt;
+        theta_ += cmd_.angular.z * dt;
 
-        x_ = std::max(10.0, std::min(490.0, x_));
-        y_ = std::max(10.0, std::min(490.0, y_));
+        x_ += v_ * std::cos(theta_) * dt;
+        y_ += v_ * std::sin(theta_) * dt;
+                
 
-        auto odom = nav_msgs::msg::Odometry();
+        nav_msgs::msg::Odometry odom = nav_msgs::msg::Odometry();
         odom.pose.pose.position.x = x_;
         odom.pose.pose.position.y = y_;
         odom.pose.pose.orientation.z = std::sin(theta_ / 2.0);
         odom.pose.pose.orientation.w = std::cos(theta_ / 2.0);
         odom_pub_->publish(odom);
     }
-
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-    rclcpp::TimerBase::SharedPtr timer_;
-
-    geometry_msgs::msg::Twist cmd_;
-    double x_, y_, theta_;
 };
